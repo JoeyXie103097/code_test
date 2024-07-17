@@ -142,26 +142,69 @@ class TestExample(unittest.TestCase):
         output_matrix = quiz.solve_sudoku(input_matrix)
         self.assertEqual(output_matrix, expected_matrix)
 
-    # webapp test1: test connecting websocket client to server, and after connected, username will be broadcast, then, send message to server;
+    # webapp test1: test connecting websocket client to server, and after connected, username will be broadcast;
     def test_webapp1(self):
         client = TestClient(app)
         user1 = "Joey"
-        user1_message_list = []
+        user2 = "Sharon"
+        message_list = []
+
+        # user1 first entered the room, its username(Joey) is broadcasted to user1 only; when user2 entered the room, its username is broadcasted to user1 and user2;
         expect_message_list = [
             "Joey",
+            "Sharon",
+            "Sharon"
+        ]
+        
+        with client.websocket_connect(f"/ws/{user1}") as user1_connection, client.websocket_connect(f"/ws/{user2}") as user2_connection:
+            user1_enter_message_to_user1 = user1_connection.receive_text()
+            user2_enter_message_to_user2 = user2_connection.receive_text()
+            user2_enter_message_to_user1 = user1_connection.receive_text()
+            message_list = [
+                user1_enter_message_to_user1,
+                user2_enter_message_to_user2,
+                user2_enter_message_to_user1
+            ]
+            
+        self.assertEqual(message_list, expect_message_list)
+
+    # webapp test2: test connecting websocket client to server, and after connected, username will be broadcast, then user1 will be sending message and the message will be broadcasted to user1 and user2;
+    def test_webapp2(self):
+        client = TestClient(app)
+        user1 = "Joey"
+        user2 = "Sharon"
+        user1_send_message = "Hello World!"
+        message_list = []
+
+        # user1 first entered the room, its username(Joey) is broadcasted to user1 only; when user2 entered the room, its username is broadcasted to user1 and user2;
+        expect_message_list = [
+            "Joey",
+            "Sharon",
+            "Sharon",
+            "Joey: Hello World!",
             "Joey: Hello World!"
         ]
         
-        with client.websocket_connect(f"/ws/{user1}") as user1_connection:
-            # simulate client side actions:
-            user1_connection.send_text("Hello World!")
+        with client.websocket_connect(f"/ws/{user1}") as user1_connection, client.websocket_connect(f"/ws/{user2}") as user2_connection:
+            # greeting message when enter room:
+            user1_enter_message_to_user1 = user1_connection.receive_text()
+            user2_enter_message_to_user2 = user2_connection.receive_text()
+            user2_enter_message_to_user1 = user1_connection.receive_text()
 
-            # collect messages sent by server:
-            for _ in range(2):
-                server_message = user1_connection.receive_text()
-                user1_message_list.append(server_message)
+            # user1 send message and message will be broadcasted
+            user1_connection.send_text(user1_send_message)
+            user1_receive_message_from_user1 = user1_connection.receive_text()
+            user2_receive_message_from_user1 = user2_connection.receive_text()
+
+            message_list = [
+                user1_enter_message_to_user1,
+                user2_enter_message_to_user2,
+                user2_enter_message_to_user1,
+                user1_receive_message_from_user1,
+                user2_receive_message_from_user1
+            ]
             
-        self.assertEqual(user1_message_list, expect_message_list)
+        self.assertEqual(message_list, expect_message_list)
 
 
 

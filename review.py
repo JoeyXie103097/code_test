@@ -63,19 +63,18 @@ class Counter:
 #             Also as suggestion, this counter class should also have (not forced)     reset function: reset the count back to 1 as designed,              add_count fucntion: add value into count to keep track; 
 
 class RevisedCounter:
-    __count = 0
 
     def __init__(self):
-        self.__count = 1
+        self.count = 1
 
     def get_count(self):
-        return self.__count
+        return self.count
     
     def reset_count(self):
-        self.__count = 1
+        self.count = 1
     
     def add_count(self, value):
-        self.__count += value
+        self.count += value
 
 # Review 4
 
@@ -116,8 +115,8 @@ class RevisedSafeCounter:
         self.count = 0
 
     def increment(self):
-        self.lock.acquire()
         try:
+            self.lock.acquire()
             self.count += 1
         finally:
             self.lock.release()
